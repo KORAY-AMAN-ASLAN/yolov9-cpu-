@@ -2,9 +2,11 @@ import cv2
 import torch
 import numpy as np
 
+#  python .\kalmanDeadreckning.py --weights .\yolov9-c-converted.pt --source=0
+#
 # Initialize YOLOv5 model
-model = torch.hub.load('ultralytics/yolov5', 'yolov5s', pretrained=True)
-
+model = torch.hub.load('ultralytics/yolov5', 'yolov5l', pretrained=True)
+# python .\findDistance.py --weights .\yolov9-c-converted.pt --source=0 --project ./runs/detect --name my_output
 def calculate_distance(point1, point2):
     """
     Calculate Euclidean distance between two points.

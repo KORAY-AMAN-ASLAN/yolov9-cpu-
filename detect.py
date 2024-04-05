@@ -3,7 +3,8 @@ import os
 import platform
 import sys
 from pathlib import Path
-
+ # python detect.py --weights yolov9-c-converted.pt --source 0
+ #  python .\detect.py --weights .\yolov9-c-converted.pt --source=0 --project ./runs/detect --name my_output
 import torch
 
 FILE = Path(__file__).resolve()

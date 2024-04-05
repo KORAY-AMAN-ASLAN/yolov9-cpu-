@@ -455,7 +455,7 @@ def smart_hub_load(repo='ultralytics/yolov5', model='yolov5s', **kwargs):
         return torch.hub.load(repo, model, force_reload=True, **kwargs)
 
 
-def smart_resume(ckpt, optimizer, ema=None, weights='yolov5s.pt', epochs=300, resume=True):
+def smart_resume(ckpt, optimizer, ema=None, weights='yolov5sl-seg.pt', epochs=300, resume=True):
     # Resume training from a partially trained checkpoint
     best_fitness = 0.0
     start_epoch = ckpt['epoch'] + 1

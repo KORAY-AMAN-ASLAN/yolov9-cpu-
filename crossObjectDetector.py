@@ -1,14 +1,16 @@
 import cv2
 import numpy as np
 import torch
-import winsound  # For Windows only, for cross-platform use an alternative
-
-# Assuming KalmanFilter class is defined in kalman_filter.py
+import winsound
 from KalmanFilter import KalmanFilter
+"""
+This Python script integrates YOLOv5 for object detection, Kalman filtering for object tracking,
+ dead reckoning for predicting future positions, and audio alerts for detecting close object proximity
+To run use this:  python .\crossObjectDetector.py --weights .\yolov9-c-converted.pt --source=0   
 
+"""
 # Load the YOLOv5 model pre-trained on COCO dataset
 model = torch.hub.load('ultralytics/yolov5', 'yolov5s', pretrained=True)
-
 
 def get_color_by_id(class_id):
     """
@@ -16,8 +18,6 @@ def get_color_by_id(class_id):
     """
     np.random.seed(class_id)
     return [int(x) for x in np.random.randint(0, 255, 3)]
-
-#python   CrossFilterDetector.py  --source 0
 
 def run_yolov5_inference(model, frame):
     """
@@ -32,6 +32,15 @@ def run_yolov5_inference(model, frame):
         detections.append([x1.item(), y1.item(), x2.item(), y2.item(), conf.item(), cls.item()])
     return detections
 
+def dead_reckoning(kf, dt=1):
+    """
+    Predicts future position based on current velocity using Dead Reckoning.
+    Assumes the state vector format is [x, y, vx, vy].T.
+    """
+    x, y, vx, vy = kf.x.flatten()
+    future_x = x + vx * dt
+    future_y = y + vy * dt
+    return int(future_x), int(future_y)
 
 def beep_alert():
     """
@@ -41,8 +50,7 @@ def beep_alert():
     duration = 1000  # Set Duration To 1000 ms == 1 second
     winsound.Beep(frequency, duration)
 
-
-def check_proximity(detections, threshold=50):
+def check_proximity(detections, threshold=20):
     """
     Checks if any two detections are within a specified proximity threshold.
     Returns True if any two detections are close to each other.
@@ -58,9 +66,8 @@ def check_proximity(detections, threshold=50):
                 return True
     return False
 
-
 def main():
-    source = 0
+    source = 0  # Video capture source
     cap = cv2.VideoCapture(source)
     kalman_filters = {}
 
@@ -71,10 +78,7 @@ def main():
 
         detections = run_yolov5_inference(model, frame)
 
-        # Check for proximity and alert if conditions are met
-        if check_proximity(detections):
-            beep_alert()  # Plays a beep sound if any two objects are too close
-
+        # Update Kalman filters and predict future positions
         for i, det in enumerate(detections):
             x1, y1, x2, y2, conf, cls = det
             center_x = int((x1 + x2) / 2)
@@ -88,18 +92,21 @@ def main():
             kf.update(meas)
             predicted = kf.predict()
 
+            future_x, future_y = dead_reckoning(kf, dt=1)
+
             color = get_color_by_id(int(cls))
-            cv2.circle(frame, (int(predicted[0].item()), int(predicted[1].item())), 10, color, -1)
+            cv2.circle(frame, (future_x, future_y), 10, color, -1)
             cv2.rectangle(frame, (int(x1), int(y1)), (int(x2), int(y2)), color, 2)
 
-        cv2.imshow("YOLOv5 Object Tracking", frame)
+        if check_proximity(detections):
+            beep_alert()  # Generate audio alert if objects are too close
+
+        cv2.imshow("Cross Object Detector", frame)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 
     cap.release()
     cv2.destroyAllWindows()
 
-
 if __name__ == "__main__":
     main()
-# python   crossObjectDetector.py  --source 0
