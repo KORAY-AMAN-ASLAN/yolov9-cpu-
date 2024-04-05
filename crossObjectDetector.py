@@ -12,7 +12,7 @@ To run use this:  python .\crossObjectDetector.py --weights .\yolov9-c-converted
 
 """
 # Load the YOLOv5 model pre-trained on COCO dataset
-model = torch.hub.load('ultralytics/yolov5', 'yolov5s', pretrained=True)
+model = torch.hub.load('ultralytics/yolov5', 'yolov5l', pretrained=True)
 
 def get_color_by_id(class_id):
     """
@@ -22,17 +22,16 @@ def get_color_by_id(class_id):
     return [int(x) for x in np.random.randint(0, 255, 3)]
 
 def run_yolov5_inference(model, frame):
-    """
-    Performs YOLOv5 inference on a frame and returns detections.
-    Each detection includes bounding box coordinates, confidence score, and class ID.
-    """
     frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     results = model(frame_rgb)
     detections = []
     for *xyxy, conf, cls in results.xyxy[0]:
         x1, y1, x2, y2 = xyxy
-        detections.append([x1.item(), y1.item(), x2.item(), y2.item(), conf.item(), cls.item()])
+        class_name = model.names[int(cls.item())]  # Get class name
+        detections.append([x1.item(), y1.item(), x2.item(), y2.item(), conf.item(), cls.item(), class_name])
     return detections
+
+
 
 def dead_reckoning(kf, dt=1):
     """
@@ -52,7 +51,7 @@ def beep_alert():
     duration = 1000  # Set Duration To 1000 ms == 1 second
     winsound.Beep(frequency, duration)
 
-def check_proximity(detections, threshold=20):
+def check_proximity(detections, threshold=50):
     """
     Checks if any two detections are within a specified proximity threshold.
     Returns True if any two detections are close to each other.
@@ -61,12 +60,13 @@ def check_proximity(detections, threshold=20):
         for j, det2 in enumerate(detections):
             if i >= j:  # Avoid repeating comparisons
                 continue
-            x1, y1, _, _, _, _ = det1
-            x2, y2, _, _, _, _ = det2
+            x1, y1, _, _, _, _, _ = det1  # Update to match the new detections structure
+            x2, y2, _, _, _, _, _ = det2  # Update to match the new detections structure
             distance = np.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2)
             if distance < threshold:
                 return True
     return False
+
 
 def main():
     source = 0  # Video capture source
@@ -82,7 +82,8 @@ def main():
 
         # Update Kalman filters and predict future positions
         for i, det in enumerate(detections):
-            x1, y1, x2, y2, conf, cls = det
+            x1, y1, x2, y2, conf, cls, class_name = det  # Extract class_name here
+
             center_x = int((x1 + x2) / 2)
             center_y = int((y1 + y2) / 2)
 
@@ -99,6 +100,10 @@ def main():
             color = get_color_by_id(int(cls))
             cv2.circle(frame, (future_x, future_y), 10, color, -1)
             cv2.rectangle(frame, (int(x1), int(y1)), (int(x2), int(y2)), color, 2)
+            # Display class name and probability
+            label = f"{class_name}: {conf:.2f}"
+            cv2.putText(frame, label, (int(x1), int(y1-10)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
+
 
         if check_proximity(detections):
             beep_alert()  # Generate audio alert if objects are too close
