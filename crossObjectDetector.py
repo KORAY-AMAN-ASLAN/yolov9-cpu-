@@ -5,8 +5,10 @@ import winsound
 from KalmanFilter import KalmanFilter
 """
 This Python script integrates YOLOv5 for object detection, Kalman filtering for object tracking,
- dead reckoning for predicting future positions, and audio alerts for detecting close object proximity
+ dead reckoning for predicting future positions, and audio alerts for detecting close object proximity.
+ , this code can monitor the movements, detect any anomalies or collisions, and trigger alerts for maintenance or safety measures.
 To run use this:  python .\crossObjectDetector.py --weights .\yolov9-c-converted.pt --source=0   
+
 
 """
 # Load the YOLOv5 model pre-trained on COCO dataset
