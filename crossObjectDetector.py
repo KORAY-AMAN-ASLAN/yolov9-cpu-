@@ -2,7 +2,10 @@ import cv2
 import numpy as np
 import torch
 import winsound
+from ultralytics import YOLO
+
 from KalmanFilter import KalmanFilter
+''
 """
 This Python script integrates YOLOv5 for object detection, Kalman filtering for object tracking,
  dead reckoning for predicting future positions, and audio alerts for detecting close object proximity.
@@ -12,8 +15,9 @@ To run use this:  python .\crossObjectDetector.py --weights .\yolov9-c-converted
 
 """
 # Load the YOLOv5 model pre-trained on COCO dataset
-model = torch.hub.load('ultralytics/yolov5', 'yolov5l', pretrained=True)
+model = torch.hub.load('ultralytics/yolov5', 'yolov5n', pretrained=True)
 
+#model = YOLO("yolov8n.pt")
 def get_color_by_id(class_id):
     """
     Generates a unique color for each class ID to ensure consistency across runs.
@@ -21,8 +25,10 @@ def get_color_by_id(class_id):
     np.random.seed(class_id)
     return [int(x) for x in np.random.randint(0, 255, 3)]
 
+
 def run_yolov5_inference(model, frame):
     frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    print(frame_rgb)
     results = model(frame_rgb)
     detections = []
     for *xyxy, conf, cls in results.xyxy[0]:
@@ -30,7 +36,6 @@ def run_yolov5_inference(model, frame):
         class_name = model.names[int(cls.item())]  # Get class name
         detections.append([x1.item(), y1.item(), x2.item(), y2.item(), conf.item(), cls.item(), class_name])
     return detections
-
 
 
 def dead_reckoning(kf, dt=1):
