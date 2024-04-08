@@ -40,7 +40,7 @@ plt.scatter(df_filtered['pred_x'], df_filtered['pred_y'], c='red', marker='x', l
 plt.title(f'Object Tracking and Future Position Prediction for {class_name}')
 plt.xlabel('X Position')
 plt.ylabel('Y Position')
-plt.legend(loc='upper left', bbox_to_anchor=(1, 1))  # Move the legend outside of the plot
+plt.legend(loc='upper left', bbox_to_anchor=(1, 1))  
 plt.grid(True)
-plt.tight_layout()  # Adjust the padding between and around subplots
+plt.tight_layout()  
 plt.show()
