@@ -3,16 +3,32 @@ import numpy as np
 import torch
 import winsound
 from ultralytics import YOLO
+import csv
 
 from KalmanFilter import KalmanFilter
 ''
 """
+
+Auther: Koray Aman Arabzadeh
+Thesis: Mid Sweden University.
+Bachelor Thesis - Bachelor of Science in Engineering, Specialisation in Computer
+Engineering
+Main field of study: Computer Engineering
+Credits: 15 hp (ECTS)
+Semester, Year: Spring, 2024
+Supervisor: Emin Zerman
+Examiner: Stefan Forsström
+Course code: DT099G
+Programme: Degree of Bachelor of Science with a major in Computer Engineering
+
+
 This Python script integrates YOLOv5 for object detection, Kalman filtering for object tracking,
  dead reckoning for predicting future positions, and audio alerts for detecting close object proximity.
  , this code can monitor the movements, detect any anomalies or collisions, and trigger alerts for maintenance or safety measures.
 To run use this:  python .\crossObjectDetector.py --weights .\yolov9-c-converted.pt --source=0   
 
-
+This code is used to so can be used navigating dynamic environments, like warehouses,
+ to track objects or other robots, plan paths, and avoid collisions.
 """
 # Load the YOLOv5 model pre-trained on COCO dataset
 model = torch.hub.load('ultralytics/yolov5', 'yolov5n', pretrained=True)
@@ -28,7 +44,7 @@ def get_color_by_id(class_id):
 
 def run_yolov5_inference(model, frame):
     frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-    print(frame_rgb)
+   # print(frame_rgb)
     results = model(frame_rgb)
     detections = []
     for *xyxy, conf, cls in results.xyxy[0]:
@@ -78,44 +94,48 @@ def main():
     cap = cv2.VideoCapture(source)
     kalman_filters = {}
 
-    while True:
-        ret, frame = cap.read()
-        if not ret:
-            break
+    # Open a file to save the detection and prediction data for plotting , comparision for accurcy
+    with open('tracking_and_predictions.csv', 'w', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow(['det_x', 'det_y', 'pred_x', 'pred_y', 'class_name'])  # Header
 
-        detections = run_yolov5_inference(model, frame)
+        while True:
+            ret, frame = cap.read()
+            if not ret:
+                break
 
-        # Update Kalman filters and predict future positions
-        for i, det in enumerate(detections):
-            x1, y1, x2, y2, conf, cls, class_name = det  # Extract class_name here
+            detections = run_yolov5_inference(model, frame)
 
-            center_x = int((x1 + x2) / 2)
-            center_y = int((y1 + y2) / 2)
+            for i, det in enumerate(detections):
+                x1, y1, x2, y2, conf, cls, class_name = det
+                center_x = int((x1 + x2) / 2)
+                center_y = int((y1 + y2) / 2)
 
-            if cls not in kalman_filters:
-                kalman_filters[cls] = KalmanFilter(dt=0.1, u=0.0, std_acc=1, std_meas=0.5)
+                if cls not in kalman_filters:
+                    kalman_filters[cls] = KalmanFilter(dt=0.1, u=0.0, std_acc=1, std_meas=0.5)
 
-            kf = kalman_filters[cls]
-            meas = np.array([[center_x], [center_y]])
-            kf.update(meas)
-            predicted = kf.predict()
+                kf = kalman_filters[cls]
+                meas = np.array([[center_x], [center_y]])
+                kf.update(meas)
+                kf.predict()
 
-            future_x, future_y = dead_reckoning(kf, dt=1)
+                future_x, future_y = dead_reckoning(kf, dt=1)
 
-            color = get_color_by_id(int(cls))
-            cv2.circle(frame, (future_x, future_y), 10, color, -1)
-            cv2.rectangle(frame, (int(x1), int(y1)), (int(x2), int(y2)), color, 2)
-            # Display class name and probability
-            label = f"{class_name}: {conf:.2f}"
-            cv2.putText(frame, label, (int(x1), int(y1-10)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
+                # Save detection and prediction data
+                writer.writerow([center_x, center_y, future_x, future_y, class_name])
 
+                color = get_color_by_id(int(cls))
+                cv2.circle(frame, (future_x, future_y), 10, color, -1)
+                cv2.rectangle(frame, (int(x1), int(y1)), (int(x2), int(y2)), color, 2)
+                label = f"{class_name}: {conf:.2f}"
+                cv2.putText(frame, label, (int(x1), int(y1-10)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
 
-        if check_proximity(detections):
-            beep_alert()  # Generate audio alert if objects are too close
+          #  if check_proximity(detections):
+           #     beep_alert()
 
-        cv2.imshow("Cross Object Detector", frame)
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
+            cv2.imshow("Cross Object Detector", frame)
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                break
 
     cap.release()
     cv2.destroyAllWindows()
