@@ -9,27 +9,6 @@ from KalmanFilter import KalmanFilter
 ''
 """
 
-Auther: Koray Aman Arabzadeh
-Thesis: Mid Sweden University.
-Bachelor Thesis - Bachelor of Science in Engineering, Specialisation in Computer
-Engineering
-Main field of study: Computer Engineering
-Credits: 15 hp (ECTS)
-Semester, Year: Spring, 2024
-Supervisor: Emin Zerman
-Examiner: Stefan Forsström
-Course code: DT099G
-Programme: Degree of Bachelor of Science with a major in Computer Engineering
-
-
-This Python script integrates YOLOv5 for object detection, Kalman filtering for object tracking,
- dead reckoning for predicting future positions, and audio alerts for detecting close object proximity.
- , this code can monitor the movements, detect any anomalies or collisions, and trigger alerts for maintenance or safety measures.
-To run use this:  python .\crossObjectDetector.py --weights .\yolov9-c-converted.pt --source=0   
-
-This code is used to so can be used navigating dynamic environments, like warehouses,
- to track objects or other robots, plan paths, and avoid collisions.
-"""
 # Load the YOLOv5 model pre-trained on COCO dataset
 model = torch.hub.load('ultralytics/yolov5', 'yolov5n', pretrained=True)
 
